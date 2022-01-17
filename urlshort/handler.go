@@ -56,9 +56,6 @@ func parseYaml(yml []byte) ([]Url, error) {
 	if err != nil {
 		return nil, err
 	}
-    for _, url := range urls {
-        fmt.Println(url)
-    }
     return urls, nil
 }
 

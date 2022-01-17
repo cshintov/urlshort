@@ -32,25 +32,22 @@ func main() {
 	}
 	mapHandler := urlshort.MapHandler(pathsToUrls, mux)
 
-    var handlerFunc (func([]byte, http.Handler) (http.HandlerFunc, error))
-
     switch format {
     case "yaml":
-        handlerFunc = urlshort.YAMLHandler
-
-    case "json":
-        handlerFunc = urlshort.JSONHandler
-
-    default:
-        handlerFunc = nil
-        handler = mapHandler
-    }
-
-    if handlerFunc != nil {
-        handler, err = handlerFunc([]byte(urls), mapHandler)
+        handler, err = urlshort.YAMLHandler([]byte(urls), mapHandler)
         if err != nil {
             panic(err)
         }
+
+    case "json":
+        // This works even if we use urlshort.YAMLHandler. Why???
+        handler, err = urlshort.JSONHandler([]byte(urls), mapHandler)
+        if err != nil {
+            panic(err)
+        }
+
+    default:
+        handler = mapHandler
     }
 
     fmt.Println("Starting the server on :3000")
