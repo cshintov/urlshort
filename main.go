@@ -2,12 +2,27 @@ package main
 
 import (
 	"fmt"
+    "flag"
+    "io/ioutil"
 	"net/http"
 
 	"urlshortner/urlshort"
 )
 
 func main() {
+    var urlsFile, format string
+    var handler http.Handler
+
+    flag.StringVar(&format, "fmt", "yaml", "fmt of the urls file")
+    flag.StringVar(&urlsFile, "urls", "", "urls as a yaml/json file")
+
+    flag.Parse()
+
+    urls, err := ioutil.ReadFile(urlsFile)
+    if err != nil {
+        panic(err)
+    }
+
 	mux := defaultMux()
 
 	// Build the MapHandler using the mux as the fallback
@@ -17,20 +32,29 @@ func main() {
 	}
 	mapHandler := urlshort.MapHandler(pathsToUrls, mux)
 
-	// Build the YAMLHandler using the mapHandler as the
-	// fallback
-    yaml := `
-- path: /urlshort
-  url: https://github.com/gophercises/urlshort
-- path: /urlshort-final
-  url: https://github.com/gophercises/urlshort/tree/solution
-`
-	yamlHandler, err := urlshort.YAMLHandler([]byte(yaml), mapHandler)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("Starting the server on :3000")
-	http.ListenAndServe(":3000", yamlHandler)
+    var handlerFunc (func([]byte, http.Handler) (http.HandlerFunc, error))
+
+    switch format {
+    case "yaml":
+        handlerFunc = urlshort.YAMLHandler
+
+    case "json":
+        handlerFunc = urlshort.JSONHandler
+
+    default:
+        handlerFunc = nil
+        handler = mapHandler
+    }
+
+    if handlerFunc != nil {
+        handler, err = handlerFunc([]byte(urls), mapHandler)
+        if err != nil {
+            panic(err)
+        }
+    }
+
+    fmt.Println("Starting the server on :3000")
+    http.ListenAndServe(":3000", handler)
 }
 
 func defaultMux() *http.ServeMux {

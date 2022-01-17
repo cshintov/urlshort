@@ -3,16 +3,11 @@ package urlshort
 import (
 	"fmt"
 	"net/http"
+	"encoding/json"
 
     "github.com/go-yaml/yaml"
 )
 
-// MapHandler will return an http.HandlerFunc (which also
-// implements http.Handler) that will attempt to map any
-// paths (keys in the map) to their corresponding URL (values
-// that each key in the map points to, in string format).
-// If the path is not provided in the map, then the fallback
-// http.Handler will be called instead.
 func MapHandler(pathsToUrls map[string]string, fallback http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if url, ok := pathsToUrls[r.URL.Path]; ok {
@@ -33,9 +28,26 @@ func YAMLHandler(yml []byte, fallback http.Handler) (http.HandlerFunc, error) {
 	return MapHandler(pathMap, fallback), nil
 }
 
+func JSONHandler(jsondata []byte, fallback http.Handler) (http.HandlerFunc, error) {
+	parsedJson, err := parseJson(jsondata)
+	if err != nil {
+		return nil, err
+	}
+	pathMap := buildMap(parsedJson)
+	return MapHandler(pathMap, fallback), nil
+}
+
 type Url struct {
-	Key    string `yaml:"path"`
-	Target string `yaml:"url"`
+    Key    string `yaml:"path" json:"path"`
+    Target string `yaml:"url" json:"url"`
+}
+
+func parseJson(yml []byte) ([]Url, error) {
+    var urls []Url
+	if err := json.Unmarshal(yml, &urls); err != nil {
+		return nil, err
+	}
+    return urls, nil
 }
 
 func parseYaml(yml []byte) ([]Url, error) {
@@ -44,6 +56,9 @@ func parseYaml(yml []byte) ([]Url, error) {
 	if err != nil {
 		return nil, err
 	}
+    for _, url := range urls {
+        fmt.Println(url)
+    }
     return urls, nil
 }
 
