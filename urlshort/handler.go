@@ -13,7 +13,6 @@ func MapHandler(pathsToUrls map[string]string, fallback http.Handler) http.Handl
 		if url, ok := pathsToUrls[r.URL.Path]; ok {
 			http.Redirect(w, r, url, http.StatusMovedPermanently)
 		} else {
-			fmt.Println(url, "Map not found!")
 			fallback.ServeHTTP(w, r)
 		}
 	}
